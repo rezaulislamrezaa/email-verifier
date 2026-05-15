@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Email Verifier — Enhanced</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, sans-serif; background: #f0f2f5; color: #222; }
+    header { background: #1a1a2e; color: #fff; padding: 18px 30px; }
+    header h1 { font-size: 20px; font-weight: 700; }
+    header p { font-size: 12px; color: #aaa; margin-top: 4px; }
+    .container { max-width: 860px; margin: 30px auto; padding: 0 20px; }
+
+    #drop-zone {
+      border: 2px dashed #aaa;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .2s, background .2s;
+      margin-bottom: 24px;
+    }
+    #drop-zone.hover { border-color: #4f46e5; background: #eef2ff; }
+    #drop-zone .icon { font-size: 36px; margin-bottom: 8px; }
+    #drop-zone p { font-size: 14px; color: #666; }
+
+    .job-block {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      border: 1px solid #e5e7eb;
+      position: relative;
+    }
+    .job-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .job-title { font-size: 14px; font-weight: 600; }
+    .close-btn { background: none; border: none; font-size: 18px; cursor: pointer; color: #999; }
+    .close-btn:hover { color: #e00; }
+
+    .progress-bar-wrap { background: #e5e7eb; border-radius: 8px; height: 10px; overflow: hidden; margin-bottom: 8px; }
+    .progress-bar { height: 100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); width: 0%; transition: width .3s; border-radius: 8px; }
+
+    .stats { display: flex; gap: 10px; margin-bottom: 8px; }
+    .stat-pill {
+      font-size: 12px; padding: 3px 10px; border-radius: 20px; font-weight: 600;
+    }
+    .stat-valid   { background: #d1fae5; color: #065f46; }
+    .stat-risky   { background: #fef3c7; color: #92400e; }
+    .stat-invalid { background: #fee2e2; color: #991b1b; }
+    .stat-pct     { background: #e0e7ff; color: #3730a3; }
+
+    .log-line {
+      font-size: 12px; color: #555; background: #f9fafb;
+      border-radius: 6px; padding: 6px 10px; min-height: 28px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .actions { margin-top: 10px; }
+    .dl-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+    .dl-btn {
+      font-size: 12px; padding: 6px 14px; border-radius: 6px;
+      text-decoration: none; border: 1px solid;
+      cursor: pointer; font-weight: 600;
+    }
+    .dl-all     { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+    .dl-valid   { background: #d1fae5; color: #065f46; border-color: #6ee7b7; }
+    .dl-risky   { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+    .dl-invalid { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+    .cancel-btn {
+      font-size: 12px; padding: 5px 12px; border-radius: 6px;
+      background: none; border: 1px solid #ccc; cursor: pointer; color: #555;
+    }
+    .cancel-btn:hover { border-color: #e00; color: #e00; }
+
+    .history-section { margin-top: 36px; }
+    .history-section h2 { font-size: 15px; font-weight: 700; margin-bottom: 12px; color: #444; }
+    .history-empty { font-size: 13px; color: #aaa; }
+    .history-row {
+      background: #fff; border: 1px solid #e5e7eb; border-radius: 8px;
+      padding: 12px 16px; margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 13px;
+    }
+    .history-row .fname { font-weight: 600; }
+    .history-row .hmeta { color: #888; font-size: 12px; }
+    .history-badge {
+      font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 600;
+    }
+    .badge-done    { background: #d1fae5; color: #065f46; }
+    .badge-running { background: #e0e7ff; color: #3730a3; }
+
+    footer { text-align: center; padding: 30px; font-size: 12px; color: #aaa; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Email Verifier — Enhanced</h1>
+  <p>SMTP + STARTTLS + ZeroBounce + Kickbox · 3-layer verification</p>
+</header>
+
+<div class="container">
+
+  <div id="drop-zone">
+    <div class="icon">📂</div>
+    <p><strong>Drop CSV here</strong> or click to upload</p>
+    <p style="margin-top:6px;font-size:11px;color:#999">CSV must have an "Email" column</p>
+  </div>
+  <input type="file" id="file-input" accept=".csv" style="display:none;">
+
+  <div id="jobs"></div>
+
+  <div class="history-section">
+    <h2>Past Jobs</h2>
+    <div id="history"><p class="history-empty">Loading...</p></div>
+  </div>
+
+</div>
+
+<footer>
+  3-layer verifier: SMTP → ZeroBounce → Kickbox fallback
+</footer>
+
+<script>
+  // Backend URL — updated after Render deployment
+  const API_BASE = 'RENDER_API_URL';
+
+  const dropZone  = document.getElementById('drop-zone');
+  const fileInput = document.getElementById('file-input');
+  const jobsDiv   = document.getElementById('jobs');
+  const histDiv   = document.getElementById('history');
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('hover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('hover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('hover');
+    handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', () => handleFile(fileInput.files[0]));
+
+  function handleFile(file) {
+    const fd = new FormData();
+    fd.append('file', file);
+    fetch('${API_BASE}/verify', { method: 'POST', body: fd })
+      .then(r => r.json())
+      .then(({ job_id }) => createJobBlock(job_id, file.name));
+  }
+
+  function createJobBlock(job_id, fileName) {
+    const block = document.createElement('div');
+    block.className = 'job-block';
+    block.id = `job-${job_id}`;
+    block.innerHTML = `
+      <div class="job-header">
+        <div class="job-title">📄 ${fileName}</div>
+        <button class="close-btn" title="Cancel & remove">✕</button>
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar"></div></div>
+      <div class="stats">
+        <span class="stat-pill stat-pct">0%</span>
+        <span class="stat-pill stat-valid">✅ 0 valid</span>
+        <span class="stat-pill stat-risky">⚠️ 0 risky</span>
+        <span class="stat-pill stat-invalid">❌ 0 invalid</span>
+      </div>
+      <div class="log-line">Starting verification...</div>
+      <div class="actions">
+        <button class="cancel-btn">Cancel</button>
+      </div>
+    `;
+    jobsDiv.prepend(block);
+
+    const bar      = block.querySelector('.progress-bar');
+    const pills    = block.querySelectorAll('.stat-pill');
+    const logLine  = block.querySelector('.log-line');
+    const actDiv   = block.querySelector('.actions');
+    const closeBtn = block.querySelector('.close-btn');
+    const cancelBtn = block.querySelector('.cancel-btn');
+
+    let done = false;
+
+    closeBtn.onclick = () => {
+      fetch(`${API_BASE}/cancel?job_id=${job_id}`, { method: 'POST' });
+      block.remove();
+    };
+    cancelBtn.onclick = () => {
+      fetch(`${API_BASE}/cancel?job_id=${job_id}`, { method: 'POST' });
+      logLine.textContent = '❌ Canceled';
+      cancelBtn.remove();
+    };
+
+    const poll = setInterval(async () => {
+      if (done) { clearInterval(poll); return; }
+      try {
+        const [prog, logText] = await Promise.all([
+          fetch(`${API_BASE}/progress?job_id=${job_id}`).then(r => r.json()),
+          fetch(`${API_BASE}/log?job_id=${job_id}`).then(r => r.text()),
+        ]);
+
+        bar.style.width = prog.percent + '%';
+        pills[0].textContent = `${prog.percent}% (${prog.row}/${prog.total})`;
+        pills[1].textContent = `✅ ${prog.valid} valid`;
+        pills[2].textContent = `⚠️ ${prog.risky} risky`;
+        pills[3].textContent = `❌ ${prog.invalid} invalid`;
+        if (logText) logLine.textContent = logText;
+
+        if (prog.percent >= 100) {
+          done = true;
+          clearInterval(poll);
+          logLine.textContent = '✅ Done!';
+          actDiv.innerHTML = `
+            <div class="dl-group">
+              <a class="dl-btn dl-all"
+                 href="${API_BASE}/download?job_id=${job_id}&type=all"
+                 target="_blank">⬇ All</a>
+              <a class="dl-btn dl-valid"
+                 href="${API_BASE}/download?job_id=${job_id}&type=valid"
+                 target="_blank">✅ Valid only</a>
+              <a class="dl-btn dl-risky"
+                 href="${API_BASE}/download?job_id=${job_id}&type=risky"
+                 target="_blank">⚠️ Risky only</a>
+              <a class="dl-btn dl-invalid"
+                 href="${API_BASE}/download?job_id=${job_id}&type=risky_invalid"
+                 target="_blank">❌ Risky + Invalid</a>
+            </div>
+          `;
+          loadHistory();
+        }
+      } catch (e) {
+        logLine.textContent = '⚠️ Server not responding — is verify-app.py running?';
+      }
+    }, 1000);
+  }
+
+  async function loadHistory() {
+    try {
+      const jobs = await fetch('${API_BASE}/jobs').then(r => r.json());
+      if (!jobs.length) {
+        histDiv.innerHTML = '<p class="history-empty">No past jobs.</p>';
+        return;
+      }
+      histDiv.innerHTML = jobs.map(j => `
+        <div class="history-row">
+          <div>
+            <div class="fname">${j.filename}</div>
+            <div class="hmeta">${j.created_at.slice(0,16).replace('T',' ')} &nbsp;·&nbsp;
+              ${j.total} rows &nbsp;·&nbsp;
+              ✅ ${j.cnt_valid} &nbsp; ⚠️ ${j.cnt_risky} &nbsp; ❌ ${j.cnt_invalid}
+            </div>
+          </div>
+          <div>
+            <span class="history-badge ${j.done ? 'badge-done' : 'badge-running'}">
+              ${j.done ? 'Done' : j.progress + '%'}
+            </span>
+          </div>
+        </div>
+      `).join('');
+    } catch (e) {
+      histDiv.innerHTML = '<p class="history-empty">Could not load history — server offline?</p>';
+    }
+  }
+
+  loadHistory();
+</script>
+</body>
+</html>
