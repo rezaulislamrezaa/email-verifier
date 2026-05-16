@@ -9,3 +9,11 @@ services:
         sync: false
       - key: KICKBOX_KEY
         sync: false
+      - key: NEVERBOUNCE_KEY
+        sync: false
+      - key: ABSTRACT_KEY
+        sync: false
+      - key: GOOGLE_SA_KEY
+        sync: false
+      - key: APP_PASSWORD
+        sync: false
