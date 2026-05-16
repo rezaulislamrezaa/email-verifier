@@ -631,18 +631,19 @@ def download():
     elif ftype=="risky_invalid":filtered=[r for r in reader if r['status'] in('risky','invalid')]
     else:                      filtered=reader
     fname=store['filename']
+    base = fname.replace('.csv','').replace('.CSV','')
     if fmt=="json":
         return Response(json.dumps(filtered,indent=2),mimetype='application/json',
-            headers={"Content-Disposition":f"attachment; filename={ftype}-{fname.replace('.csv','')}.json"})
+            headers={"Content-Disposition":f'attachment; filename="{ftype}-{base}.json"'})
     if fmt=="txt":
         ef=store['email_field']
         return Response('\n'.join(r.get(ef,'') for r in filtered if r.get(ef,'')),mimetype='text/plain',
-            headers={"Content-Disposition":f"attachment; filename={ftype}-emails.txt"})
+            headers={"Content-Disposition":f'attachment; filename="{ftype}-emails.txt"'})
     out=io.StringIO()
     if filtered: w=csv.DictWriter(out,fieldnames=list(filtered[0].keys())); w.writeheader(); w.writerows(filtered)
     out.seek(0)
     return Response(out.getvalue(),mimetype='text/csv',
-        headers={"Content-Disposition":f"attachment; filename={ftype}-verified-{fname}"})
+        headers={"Content-Disposition":f'attachment; filename="{ftype}-verified-{base}.csv"'})
 
 @app.route('/sheets-write',methods=['POST'])
 def sheets_write():
