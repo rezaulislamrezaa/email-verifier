@@ -2,3 +2,5 @@ flask
 flask-cors
 dnspython
 requests
+google-auth
+google-api-python-client

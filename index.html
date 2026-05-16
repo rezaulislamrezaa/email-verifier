@@ -3,708 +3,645 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Email Verifier v2</title>
+<title>Email Verifier v3</title>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-:root {
-  --bg:       #080a0f;
-  --surface:  rgba(255,255,255,0.04);
-  --border:   rgba(255,255,255,0.08);
-  --text:     #e2e8f0;
-  --muted:    #64748b;
-  --accent:   #6366f1;
-  --accent2:  #8b5cf6;
-  --green:    #10b981;
-  --yellow:   #f59e0b;
-  --red:      #ef4444;
-  --blue:     #06b6d4;
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080a0f;--surface:rgba(255,255,255,0.04);--border:rgba(255,255,255,0.08);
+  --text:#e2e8f0;--muted:#64748b;--accent:#6366f1;--accent2:#8b5cf6;
+  --green:#10b981;--yellow:#f59e0b;--red:#ef4444;--blue:#06b6d4;
 }
-
-body { background: var(--bg); color: var(--text); font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif; min-height: 100vh; overflow-x: hidden; }
-
-/* Animated background glows */
-.glow { position: fixed; border-radius: 50%; pointer-events: none; filter: blur(80px); opacity: .35; animation: drift 12s ease-in-out infinite alternate; }
-.glow-1 { width: 600px; height: 600px; background: radial-gradient(circle, #6366f1, transparent 70%); top: -200px; left: -200px; }
-.glow-2 { width: 500px; height: 500px; background: radial-gradient(circle, #8b5cf6, transparent 70%); bottom: -150px; right: -150px; animation-delay: -6s; }
-.glow-3 { width: 300px; height: 300px; background: radial-gradient(circle, #06b6d4, transparent 70%); top: 40%; left: 60%; animation-delay: -3s; }
-@keyframes drift { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(40px,30px) scale(1.1)} }
-
-/* Header */
-header {
-  position: sticky; top: 0; z-index: 100;
-  background: rgba(8,10,15,0.8);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid var(--border);
-  padding: 14px 28px;
-  display: flex; align-items: center; justify-content: space-between;
+body.light{
+  --bg:#f1f5f9;--surface:rgba(255,255,255,0.9);--border:rgba(0,0,0,0.08);
+  --text:#1e293b;--muted:#64748b;
 }
-.header-brand { display: flex; align-items: center; gap: 12px; }
-.header-brand h1 { font-size: 18px; font-weight: 700; background: linear-gradient(135deg,#6366f1,#8b5cf6,#06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-#server-badge {
-  font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600;
-  background: rgba(100,116,139,0.2); color: var(--muted); border: 1px solid var(--border);
-  transition: all .4s;
-}
-#server-badge.awake { background: rgba(16,185,129,0.15); color: var(--green); border-color: rgba(16,185,129,0.3); }
-#credits-panel { display: flex; gap: 14px; font-size: 12px; color: var(--muted); }
-.credit-chip { display: flex; align-items: center; gap: 5px; }
-.credit-chip span { font-weight: 700; color: var(--text); }
-
-/* Main layout */
-main { max-width: 900px; margin: 0 auto; padding: 28px 20px 60px; }
-
-/* Glass card */
-.glass {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  backdrop-filter: blur(12px);
-}
-
-/* Import section */
-#import-section { padding: 24px; margin-bottom: 20px; }
-.tab-bar { display: flex; gap: 4px; margin-bottom: 20px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 4px; }
-.tab-btn { flex: 1; padding: 8px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 600; border-radius: 6px; cursor: pointer; transition: all .2s; }
-.tab-btn.active { background: var(--accent); color: #fff; }
-
-#tab-csv { display: block; }
-#tab-sheets { display: none; }
-
-#drop-zone {
-  border: 2px dashed rgba(99,102,241,0.3);
-  border-radius: 12px; padding: 36px; text-align: center;
-  cursor: pointer; transition: all .3s; position: relative; overflow: hidden;
-}
-#drop-zone::before {
-  content: ''; position: absolute; inset: 0;
-  background: radial-gradient(ellipse at center, rgba(99,102,241,0.05) 0%, transparent 70%);
-  opacity: 0; transition: opacity .3s;
-}
-#drop-zone.hover, #drop-zone:hover { border-color: var(--accent); }
-#drop-zone.hover::before, #drop-zone:hover::before { opacity: 1; }
-#drop-zone .dz-icon { font-size: 40px; margin-bottom: 10px; }
-#drop-zone p { color: var(--muted); font-size: 14px; }
-#drop-zone strong { color: var(--text); }
-
-.sheets-form { display: flex; flex-direction: column; gap: 12px; }
-.sheets-form label { font-size: 13px; color: var(--muted); }
-.sheets-row { display: flex; gap: 10px; }
-.input-field {
-  flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 13px;
-  outline: none; transition: border-color .2s;
-}
-.input-field:focus { border-color: var(--accent); }
-.input-field::placeholder { color: var(--muted); }
-.btn { padding: 10px 20px; border-radius: 8px; border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; }
-.btn-primary { background: var(--accent); color: #fff; }
-.btn-primary:hover { background: #4f46e5; transform: translateY(-1px); }
-.btn-ghost { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
-.btn-ghost:hover { background: rgba(255,255,255,0.1); }
-
-.speed-row { display: flex; align-items: center; gap: 14px; margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
-.speed-row label { font-size: 12px; color: var(--muted); white-space: nowrap; }
-#speed-slider { flex: 1; accent-color: var(--accent); cursor: pointer; }
-#speed-label { font-size: 12px; color: var(--accent); font-weight: 600; white-space: nowrap; min-width: 140px; text-align: right; }
-
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;transition:background .3s,color .3s}
+.glow{position:fixed;border-radius:50%;pointer-events:none;filter:blur(80px);opacity:.3;animation:drift 12s ease-in-out infinite alternate}
+.glow-1{width:600px;height:600px;background:radial-gradient(circle,#6366f1,transparent 70%);top:-200px;left:-200px}
+.glow-2{width:500px;height:500px;background:radial-gradient(circle,#8b5cf6,transparent 70%);bottom:-150px;right:-150px;animation-delay:-6s}
+.glow-3{width:300px;height:300px;background:radial-gradient(circle,#06b6d4,transparent 70%);top:40%;left:60%;animation-delay:-3s}
+body.light .glow{opacity:.08}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}100%{transform:translate(40px,30px) scale(1.1)}}
+header{position:sticky;top:0;z-index:100;background:rgba(8,10,15,.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+body.light header{background:rgba(241,245,249,.9)}
+.header-left{display:flex;align-items:center;gap:12px}
+.logo{font-size:18px;font-weight:800;background:linear-gradient(135deg,#6366f1,#8b5cf6,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+#server-badge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(100,116,139,.2);color:var(--muted);border:1px solid var(--border);transition:all .4s}
+#server-badge.awake{background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)}
+.header-right{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.cred-chip{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.cred-chip span{font-weight:700;color:var(--text)}
+#theme-btn{background:none;border:1px solid var(--border);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:14px;color:var(--muted);transition:all .2s}
+#theme-btn:hover{border-color:var(--accent);color:var(--accent)}
+main{max-width:920px;margin:0 auto;padding:24px 16px 60px}
+.glass{background:var(--surface);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(12px)}
+/* Import */
+#import-card{padding:22px;margin-bottom:18px}
+.tab-bar{display:flex;gap:4px;background:rgba(255,255,255,.04);border-radius:8px;padding:4px;margin-bottom:18px}
+.tab-btn{flex:1;padding:8px;border:none;background:none;color:var(--muted);font-size:13px;font-weight:600;border-radius:6px;cursor:pointer;transition:all .2s}
+.tab-btn.active{background:var(--accent);color:#fff}
+#tab-sheets{display:none}
+#drop-zone{border:2px dashed rgba(99,102,241,.3);border-radius:12px;padding:32px;text-align:center;cursor:pointer;transition:all .3s;position:relative;overflow:hidden}
+#drop-zone::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(99,102,241,.06),transparent 70%);opacity:0;transition:opacity .3s}
+#drop-zone.hover,#drop-zone:hover{border-color:var(--accent)}
+#drop-zone.hover::before,#drop-zone:hover::before{opacity:1}
+#drop-zone .dz-icon{font-size:36px;margin-bottom:8px}
+#drop-zone p{color:var(--muted);font-size:13px}
+.sheets-form{display:flex;flex-direction:column;gap:10px}
+.sheets-form label{font-size:12px;color:var(--muted)}
+.sheets-row{display:flex;gap:8px}
+.ifield{flex:1;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:9px 13px;color:var(--text);font-size:13px;outline:none;transition:border-color .2s}
+.ifield:focus{border-color:var(--accent)}
+.ifield::placeholder{color:var(--muted)}
+body.light .ifield{background:rgba(0,0,0,.04)}
+.btn{padding:9px 18px;border-radius:8px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4f46e5;transform:translateY(-1px)}
+.btn-ghost{background:rgba(255,255,255,.06);color:var(--text);border:1px solid var(--border)}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.speed-row{display:flex;align-items:center;gap:12px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border)}
+.speed-row label{font-size:12px;color:var(--muted);white-space:nowrap}
+#speed-slider{flex:1;accent-color:var(--accent);cursor:pointer}
+#speed-label{font-size:12px;color:var(--accent);font-weight:600;white-space:nowrap;min-width:160px;text-align:right}
+/* Modal */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);z-index:500;display:flex;align-items:center;justify-content:center;animation:fadein .2s}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.modal-box{padding:28px;max-width:420px;width:90%;animation:slide-up .25s ease-out}
+.modal-box h3{font-size:16px;font-weight:700;margin-bottom:6px}
+.modal-box p{font-size:13px;color:var(--muted);margin-bottom:16px}
+.modal-select{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:8px;padding:10px 13px;color:var(--text);font-size:13px;outline:none;cursor:pointer;margin-bottom:16px}
+.modal-row{display:flex;gap:8px}
 /* Job cards */
-#jobs { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
-
-.job-card { padding: 24px; animation: slide-up .3s ease-out; }
-@keyframes slide-up { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-
-.job-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
-.job-title { font-size: 15px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
-.job-title .dupes-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(245,158,11,0.15); color: var(--yellow); font-weight: 600; }
-.job-close { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; padding: 4px; border-radius: 6px; transition: all .2s; }
-.job-close:hover { color: var(--red); background: rgba(239,68,68,0.1); }
-
-.job-body { display: grid; grid-template-columns: 180px 1fr; gap: 20px; align-items: start; }
-
-/* Circular ring */
-.ring-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-.ring-svg { width: 140px; height: 140px; }
-.ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 10; }
-.ring-fill { fill: none; stroke: url(#ringGrad); stroke-width: 10; stroke-linecap: round;
-  stroke-dasharray: 339.3; stroke-dashoffset: 339.3; transform: rotate(-90deg); transform-origin: 50% 50%;
-  transition: stroke-dashoffset .4s ease; }
-.ring-pct { font-size: 26px; font-weight: 800; fill: var(--text); }
-.ring-rows { font-size: 10px; fill: var(--muted); }
-.ring-status { font-size: 12px; color: var(--muted); text-align: center; }
-
-/* Stats panel */
-.stats-panel { display: flex; flex-direction: column; gap: 10px; }
-.stat-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; }
-.stat-valid   { background: rgba(16,185,129,0.08);  border: 1px solid rgba(16,185,129,0.15); }
-.stat-risky   { background: rgba(245,158,11,0.08);  border: 1px solid rgba(245,158,11,0.15); }
-.stat-invalid { background: rgba(239,68,68,0.08);   border: 1px solid rgba(239,68,68,0.15); }
-.stat-label { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
-.stat-num { font-size: 20px; font-weight: 800; }
-.stat-pct { font-size: 11px; color: var(--muted); }
-.sv { color: var(--green); } .sr { color: var(--yellow); } .si { color: var(--red); }
-
-/* Meta badges */
-.meta-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
-.meta-badge { font-size: 11px; padding: 4px 12px; border-radius: 20px; font-weight: 700; border: 1px solid; }
-.badge-health-A { background:rgba(16,185,129,.15); color:var(--green);   border-color:rgba(16,185,129,.3); }
-.badge-health-B { background:rgba(6,182,212,.15);  color:var(--blue);    border-color:rgba(6,182,212,.3); }
-.badge-health-C { background:rgba(245,158,11,.15); color:var(--yellow);  border-color:rgba(245,158,11,.3); }
-.badge-health-D { background:rgba(249,115,22,.15); color:#f97316;        border-color:rgba(249,115,22,.3); }
-.badge-health-F { background:rgba(239,68,68,.15);  color:var(--red);     border-color:rgba(239,68,68,.3); }
-.badge-bounce { background:rgba(99,102,241,.12); color:var(--accent); border-color:rgba(99,102,241,.25); }
-.badge-blacklist { background:rgba(239,68,68,.15); color:var(--red); border-color:rgba(239,68,68,.3); }
-
-/* Layer bar */
-.layers-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-.section-label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 10px; }
-.layer-bars { display: flex; gap: 8px; }
-.layer-chip { flex: 1; text-align: center; padding: 8px 6px; border-radius: 8px; font-size: 11px; font-weight: 700; }
-.lc-smtp  { background:rgba(99,102,241,.12); color:var(--accent);  border:1px solid rgba(99,102,241,.2); }
-.lc-zb    { background:rgba(6,182,212,.12);  color:var(--blue);    border:1px solid rgba(6,182,212,.2); }
-.lc-kb    { background:rgba(139,92,246,.12); color:var(--accent2); border:1px solid rgba(139,92,246,.2); }
-.layer-chip .lc-count { font-size: 18px; display: block; }
-.layer-chip .lc-label { font-size: 10px; opacity: .7; }
-
-/* Spam trap risk */
-.trap-row { display: flex; gap: 8px; margin-top: 10px; }
-.trap-chip { flex: 1; text-align: center; padding: 6px; border-radius: 8px; font-size: 11px; }
-.tc-high   { background:rgba(239,68,68,.1);   color:var(--red);    border:1px solid rgba(239,68,68,.2); }
-.tc-medium { background:rgba(245,158,11,.1);  color:var(--yellow); border:1px solid rgba(245,158,11,.2); }
-.tc-low    { background:rgba(16,185,129,.1);  color:var(--green);  border:1px solid rgba(16,185,129,.2); }
-.trap-chip .tc-count { font-size: 16px; font-weight: 800; display: block; }
-
-/* Live log */
-.log-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-.log-feed { display: flex; flex-direction: column; gap: 4px; max-height: 160px; overflow: hidden; }
-.log-entry {
-  font-size: 12px; padding: 6px 10px; border-radius: 6px; font-family: 'SF Mono','Consolas',monospace;
-  animation: log-in .25s ease-out;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-}
-@keyframes log-in { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:translateX(0)} }
-.le-valid   { background:rgba(16,185,129,.06);  color:#86efac; }
-.le-risky   { background:rgba(245,158,11,.06);  color:#fcd34d; }
-.le-invalid { background:rgba(239,68,68,.06);   color:#fca5a5; }
-
-/* Domain breakdown */
-.domain-section { margin-top: 16px; }
-.collapse-btn { width: 100%; text-align: left; background: none; border: none; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; cursor: pointer; display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-top: 1px solid var(--border); }
-.collapse-btn .arrow { transition: transform .2s; }
-.collapse-btn.open .arrow { transform: rotate(180deg); }
-.domain-table { display: none; margin-top: 8px; }
-.domain-table.open { display: block; }
-.dtable { width: 100%; border-collapse: collapse; font-size: 12px; }
-.dtable th { color: var(--muted); font-weight: 600; text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
-.dtable td { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.dtable tr:last-child td { border-bottom: none; }
-.dt-valid   { color: var(--green); font-weight: 700; }
-.dt-risky   { color: var(--yellow); font-weight: 700; }
-.dt-invalid { color: var(--red); font-weight: 700; }
-
-/* Download / Actions */
-.actions-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
-.dl-grid { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-.dl-btn { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; transition: all .2s; }
-.dl-btn:hover { transform: translateY(-1px); }
-.dl-all  { background:rgba(99,102,241,.1);  color:var(--accent);  border-color:rgba(99,102,241,.3); }
-.dl-v    { background:rgba(16,185,129,.1);  color:var(--green);   border-color:rgba(16,185,129,.3); }
-.dl-r    { background:rgba(245,158,11,.1);  color:var(--yellow);  border-color:rgba(245,158,11,.3); }
-.dl-i    { background:rgba(239,68,68,.1);   color:var(--red);     border-color:rgba(239,68,68,.3); }
-.dl-json { background:rgba(6,182,212,.1);   color:var(--blue);    border-color:rgba(6,182,212,.3); }
-.dl-txt  { background:rgba(139,92,246,.1);  color:var(--accent2); border-color:rgba(139,92,246,.3); }
-.copy-btn { font-size: 12px; padding: 7px 16px; border-radius: 8px; border: 1px solid rgba(99,102,241,.3); background: rgba(99,102,241,.08); color: var(--accent); cursor: pointer; font-weight: 600; transition: all .2s; }
-.copy-btn:hover { background: rgba(99,102,241,.2); }
-.copy-btn.copied { background: rgba(16,185,129,.15); border-color: rgba(16,185,129,.3); color: var(--green); }
-
-.cancel-btn-sm { font-size: 12px; padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: none; color: var(--muted); cursor: pointer; font-weight: 600; transition: all .2s; }
-.cancel-btn-sm:hover { border-color: var(--red); color: var(--red); }
-
+#jobs{display:flex;flex-direction:column;gap:14px;margin-bottom:20px}
+.jcard{padding:22px;animation:slide-up .3s ease-out}
+@keyframes slide-up{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.jhead{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;gap:8px}
+.jtitle{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.dbadge{font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(245,158,11,.15);color:var(--yellow);font-weight:600}
+.jclose{background:none;border:none;color:var(--muted);font-size:17px;cursor:pointer;padding:4px 6px;border-radius:6px;transition:all .2s;flex-shrink:0}
+.jclose:hover{color:var(--red);background:rgba(239,68,68,.1)}
+.jbody{display:grid;grid-template-columns:160px 1fr;gap:18px;align-items:start}
+/* Ring */
+.rwrap{display:flex;flex-direction:column;align-items:center;gap:6px}
+.rsvg{width:130px;height:130px}
+.rtrack{fill:none;stroke:rgba(255,255,255,.06);stroke-width:9}
+.rfill{fill:none;stroke:url(#rg);stroke-width:9;stroke-linecap:round;stroke-dasharray:339.3;stroke-dashoffset:339.3;transform:rotate(-90deg);transform-origin:50% 50%;transition:stroke-dashoffset .4s ease}
+.rpct{font-size:24px;font-weight:800;fill:var(--text)}
+.rrows{font-size:10px;fill:var(--muted)}
+.rstatus{font-size:11px;color:var(--muted);text-align:center}
+/* Stats */
+.spanel{display:flex;flex-direction:column;gap:8px}
+.srow{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;border-radius:9px}
+.sv-row{background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.15)}
+.sr-row{background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.15)}
+.si-row{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.15)}
+.slabel{font-size:13px;font-weight:600}
+.snum{font-size:19px;font-weight:800}
+.spct{font-size:11px;color:var(--muted)}
+.sv{color:var(--green)}.sr{color:var(--yellow)}.si{color:var(--red)}
+.metarow{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.mbadge{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:700;border:1px solid}
+.mA{background:rgba(16,185,129,.15);color:var(--green);border-color:rgba(16,185,129,.3)}
+.mB{background:rgba(6,182,212,.15);color:var(--blue);border-color:rgba(6,182,212,.3)}
+.mC{background:rgba(245,158,11,.15);color:var(--yellow);border-color:rgba(245,158,11,.3)}
+.mD{background:rgba(249,115,22,.15);color:#f97316;border-color:rgba(249,115,22,.3)}
+.mF{background:rgba(239,68,68,.15);color:var(--red);border-color:rgba(239,68,68,.3)}
+.mB2{background:rgba(99,102,241,.12);color:var(--accent);border-color:rgba(99,102,241,.25)}
+.mBL{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.25)}
+/* Layers */
+.lsec{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.slabel2{font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.lbars{display:flex;gap:6px;flex-wrap:wrap}
+.lchip{flex:1;min-width:60px;text-align:center;padding:7px 4px;border-radius:8px;font-size:10px;font-weight:700}
+.l0{background:rgba(99,102,241,.1);color:var(--accent);border:1px solid rgba(99,102,241,.2)}
+.l1{background:rgba(6,182,212,.1);color:var(--blue);border:1px solid rgba(6,182,212,.2)}
+.l2{background:rgba(139,92,246,.1);color:var(--accent2);border:1px solid rgba(139,92,246,.2)}
+.l3{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.l4{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.2)}
+.lcn{font-size:16px;display:block}.lcl{font-size:9px;opacity:.75}
+.trow{display:flex;gap:6px;margin-top:8px}
+.tchip{flex:1;text-align:center;padding:6px 4px;border-radius:8px;font-size:10px}
+.tH{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.tM{background:rgba(245,158,11,.1);color:var(--yellow);border:1px solid rgba(245,158,11,.2)}
+.tL{background:rgba(16,185,129,.1);color:var(--green);border:1px solid rgba(16,185,129,.2)}
+.tcn{font-size:15px;font-weight:800;display:block}
+/* Log */
+.logsec{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.logfeed{display:flex;flex-direction:column;gap:3px;max-height:148px;overflow:hidden}
+.le{font-size:11.5px;padding:5px 9px;border-radius:5px;font-family:'SF Mono','Consolas',monospace;animation:log-in .2s ease-out;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@keyframes log-in{from{opacity:0;transform:translateX(-6px)}to{opacity:1;transform:translateX(0)}}
+.lv{background:rgba(16,185,129,.07);color:#86efac}
+.lr{background:rgba(245,158,11,.07);color:#fcd34d}
+.li{background:rgba(239,68,68,.07);color:#fca5a5}
+/* Domain table */
+.domsec{margin-top:12px}
+.cbtn{width:100%;text-align:left;background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-top:1px solid var(--border)}
+.carrow{transition:transform .2s}
+.cbtn.open .carrow{transform:rotate(180deg)}
+.dtbl-wrap{display:none;margin-top:6px}
+.dtbl-wrap.open{display:block}
+.dtbl{width:100%;border-collapse:collapse;font-size:11.5px}
+.dtbl th{color:var(--muted);font-weight:600;text-align:left;padding:5px 7px;border-bottom:1px solid var(--border)}
+.dtbl td{padding:5px 7px;border-bottom:1px solid rgba(255,255,255,.03)}
+.dtbl tr:last-child td{border:none}
+.dv{color:var(--green);font-weight:700}.dr{color:var(--yellow);font-weight:700}.di{color:var(--red);font-weight:700}
+/* Actions */
+.actsec{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+.dlgrid{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:10px}
+.dlbtn{font-size:11.5px;padding:6px 13px;border-radius:7px;border:1px solid;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block;transition:all .2s}
+.dlbtn:hover{transform:translateY(-1px)}
+.dAll{background:rgba(99,102,241,.1);color:var(--accent);border-color:rgba(99,102,241,.3)}
+.dV{background:rgba(16,185,129,.1);color:var(--green);border-color:rgba(16,185,129,.3)}
+.dR{background:rgba(245,158,11,.1);color:var(--yellow);border-color:rgba(245,158,11,.3)}
+.dI{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.3)}
+.dJ{background:rgba(6,182,212,.1);color:var(--blue);border-color:rgba(6,182,212,.3)}
+.dT{background:rgba(139,92,246,.1);color:var(--accent2);border-color:rgba(139,92,246,.3)}
+.abtn{font-size:11.5px;padding:6px 14px;border-radius:7px;border:1px solid;background:none;cursor:pointer;font-weight:600;transition:all .2s}
+.copybtn{border-color:rgba(99,102,241,.3);color:var(--accent)}
+.copybtn:hover{background:rgba(99,102,241,.15)}
+.copybtn.done{border-color:rgba(16,185,129,.3);color:var(--green);background:rgba(16,185,129,.1)}
+.rebtn{border-color:rgba(245,158,11,.3);color:var(--yellow)}
+.rebtn:hover{background:rgba(245,158,11,.1)}
+.cancelbtn{border-color:var(--border);color:var(--muted)}
+.cancelbtn:hover{border-color:var(--red);color:var(--red)}
+/* Sheets write-back */
+.sheetback{margin-top:12px;padding:14px;border-radius:10px;background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.15)}
+.sheetback h4{font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px}
+.shrow{display:flex;gap:8px;margin-bottom:8px}
+.shstatus{font-size:12px;margin-top:6px;color:var(--muted)}
 /* History */
-#history-section { padding: 22px; }
-#history-section h2 { font-size: 14px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 14px; }
-.hist-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 10px; background: rgba(255,255,255,0.025); border: 1px solid var(--border); margin-bottom: 8px; }
-.hist-name { font-size: 13px; font-weight: 600; }
-.hist-meta { font-size: 11px; color: var(--muted); margin-top: 3px; }
-.hist-right { display: flex; align-items: center; gap: 10px; }
-.hbadge { font-size: 11px; padding: 3px 9px; border-radius: 12px; font-weight: 700; }
-.hb-done    { background:rgba(16,185,129,.15);  color:var(--green);  }
-.hb-running { background:rgba(99,102,241,.15);  color:var(--accent); }
-.hist-empty { color: var(--muted); font-size: 13px; }
-
-/* Pulse dot */
-.pulse { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse-ring 1.5s ease-out infinite; }
-@keyframes pulse-ring { 0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)} 70%{box-shadow:0 0 0 8px transparent} 100%{box-shadow:0 0 0 0 transparent} }
-
+#hist-card{padding:20px}
+#hist-card h2{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px}
+.hrow{display:flex;justify-content:space-between;align-items:center;padding:11px 13px;border-radius:9px;background:rgba(255,255,255,.025);border:1px solid var(--border);margin-bottom:7px}
+.hname{font-size:13px;font-weight:600}
+.hmeta{font-size:11px;color:var(--muted);margin-top:2px}
+.hright{display:flex;align-items:center;gap:8px}
+.hbadge{font-size:11px;padding:2px 8px;border-radius:12px;font-weight:700}
+.hdone{background:rgba(16,185,129,.15);color:var(--green)}
+.hrun{background:rgba(99,102,241,.15);color:var(--accent)}
+.hempty{color:var(--muted);font-size:13px}
+/* UptimeRobot card */
+#uptime-card{padding:18px;margin-top:14px;border:1px solid rgba(245,158,11,.2);background:rgba(245,158,11,.04)}
+#uptime-card h3{font-size:13px;font-weight:700;color:var(--yellow);margin-bottom:6px}
+#uptime-card p{font-size:12px;color:var(--muted);line-height:1.6}
+#uptime-card code{background:rgba(255,255,255,.07);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--text)}
+/* Pulse */
+.pulse{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);animation:pr 1.5s ease-out infinite;margin-right:4px}
+@keyframes pr{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
 /* Toast */
-#toast { position:fixed; bottom:24px; right:24px; padding:12px 20px; border-radius:10px; background:rgba(16,185,129,.15); border:1px solid rgba(16,185,129,.3); color:var(--green); font-size:13px; font-weight:600; transform:translateY(80px); opacity:0; transition:all .3s; z-index:999; }
-#toast.show { transform:translateY(0); opacity:1; }
-
-/* SVG gradient defs hidden element */
-svg.defs { position:absolute; width:0; height:0; }
-
-@media(max-width:600px) { .job-body { grid-template-columns:1fr; } .ring-wrap { margin: 0 auto; } }
+#toast{position:fixed;bottom:22px;right:22px;padding:11px 18px;border-radius:9px;font-size:13px;font-weight:600;transform:translateY(70px);opacity:0;transition:all .3s;z-index:999;border:1px solid}
+#toast.show{transform:translateY(0);opacity:1}
+svg.defs{position:absolute;width:0;height:0}
+@media(max-width:580px){.jbody{grid-template-columns:1fr}.rwrap{margin:0 auto}}
 </style>
 </head>
 <body>
 
-<!-- Animated glows -->
 <div class="glow glow-1"></div>
 <div class="glow glow-2"></div>
 <div class="glow glow-3"></div>
-
-<!-- SVG gradient defs -->
-<svg class="defs">
-  <defs>
-    <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%"   stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#06b6d4"/>
-    </linearGradient>
-  </defs>
-</svg>
-
-<!-- Toast -->
+<svg class="defs"><defs><linearGradient id="rg" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#06b6d4"/></linearGradient></defs></svg>
 <div id="toast"></div>
 
-<!-- Header -->
 <header>
-  <div class="header-brand">
-    <h1>Email Verifier v2</h1>
-    <div id="server-badge">⏳ Waking server...</div>
+  <div class="header-left">
+    <div class="logo">Email Verifier v3</div>
+    <div id="server-badge">⏳ Waking…</div>
   </div>
-  <div id="credits-panel">
-    <div class="credit-chip">ZeroBounce <span id="zb-credits">—</span></div>
-    <div class="credit-chip">Kickbox <span id="kb-credits">—</span></div>
+  <div class="header-right">
+    <div class="cred-chip">ZB <span id="c-zb">—</span></div>
+    <div class="cred-chip">KB <span id="c-kb">—</span></div>
+    <div class="cred-chip">NB <span id="c-nb">—</span></div>
+    <div class="cred-chip" title="Disposable domains loaded"><span id="c-disp">—</span> traps</div>
+    <button id="theme-btn" title="Toggle dark/light">🌙</button>
   </div>
 </header>
 
 <main>
-
-  <!-- Import section -->
-  <div class="glass" id="import-section">
+  <!-- Import -->
+  <div class="glass" id="import-card">
     <div class="tab-bar">
       <button class="tab-btn active" data-tab="csv">📂 Upload CSV</button>
       <button class="tab-btn" data-tab="sheets">📊 Google Sheets</button>
     </div>
-
     <div id="tab-csv">
       <div id="drop-zone">
         <div class="dz-icon">📂</div>
         <p><strong>Drop CSV here</strong> or click to upload</p>
-        <p style="margin-top:6px;font-size:11px;">CSV must have an <code style="color:var(--accent)">Email</code> column</p>
+        <p style="margin-top:5px;font-size:11px">Email column will be auto-detected</p>
       </div>
       <input type="file" id="file-input" accept=".csv" style="display:none">
     </div>
-
     <div id="tab-sheets">
       <div class="sheets-form">
         <label>Google Sheet ID or URL (must be publicly viewable)</label>
         <div class="sheets-row">
-          <input class="input-field" id="sheet-id" placeholder="1_eCmvWagh9ftw53Kj2VOEaf-7PdM3P8wbBLmo5L6pc0">
-          <input class="input-field" id="sheet-gid" placeholder="Tab ID (0 = first)" style="max-width:160px">
-          <button class="btn btn-primary" id="sheet-import-btn">Import →</button>
+          <input class="ifield" id="sh-id" placeholder="Sheet ID or full URL">
+          <input class="ifield" id="sh-gid" placeholder="Tab ID (0=first)" style="max-width:140px">
+          <button class="btn btn-primary" id="sh-btn">Import →</button>
         </div>
       </div>
     </div>
-
     <div class="speed-row">
       <label>⚡ Speed</label>
       <input type="range" id="speed-slider" min="0.1" max="3" step="0.1" value="0.5">
-      <span id="speed-label">Balanced (0.5s delay)</span>
+      <span id="speed-label">Balanced · 0.5s delay</span>
     </div>
   </div>
 
-  <!-- Active jobs -->
   <div id="jobs"></div>
 
   <!-- History -->
-  <div class="glass" id="history-section">
+  <div class="glass" id="hist-card">
     <h2>Past Jobs</h2>
-    <div id="history"><p class="hist-empty">Loading...</p></div>
+    <div id="hist"><p class="hempty">Loading…</p></div>
   </div>
 
+  <!-- UptimeRobot guide -->
+  <div class="glass" id="uptime-card">
+    <h3>⚡ Fix Render Sleep (Free)</h3>
+    <p>
+      Render free tier sleeps after 15 min idle → 50s wake delay on first request.<br>
+      Fix: <strong>UptimeRobot</strong> (free) pings every 5 min to keep server awake.<br><br>
+      1. Go to <strong>uptimerobot.com</strong> → Create free account<br>
+      2. Add Monitor → HTTP → URL: <code>https://email-verifier-api-n9cp.onrender.com/ping</code><br>
+      3. Interval: <strong>5 minutes</strong> → Save<br><br>
+      Done. Server stays awake permanently.
+    </p>
+  </div>
 </main>
 
 <script>
 const API_BASE = 'https://email-verifier-api-n9cp.onrender.com';
+const CIRC     = 339.3;
 
-// ── SERVER WAKE ──────────────────────────────────────────────────────────────
-async function wakeServer() {
-  try {
-    await fetch(`${API_BASE}/wake`, {cache:'no-store'});
-    const badge = document.getElementById('server-badge');
-    badge.textContent = '● Server Ready';
-    badge.classList.add('awake');
-    loadCredits();
-    loadHistory();
-  } catch(e) {
-    document.getElementById('server-badge').textContent = '✕ Offline';
-    setTimeout(wakeServer, 5000);
-  }
+// ── THEME ────────────────────────────────────────────────────────────────────
+let dark = localStorage.getItem('theme') !== 'light';
+applyTheme();
+document.getElementById('theme-btn').onclick = () => { dark=!dark; localStorage.setItem('theme',dark?'dark':'light'); applyTheme(); };
+function applyTheme(){ document.body.classList.toggle('light',!dark); document.getElementById('theme-btn').textContent = dark?'🌙':'☀️'; }
+
+// ── WAKE ─────────────────────────────────────────────────────────────────────
+async function wakeServer(){
+  try{
+    const d = await fetch(`${API_BASE}/wake`,{cache:'no-store'}).then(r=>r.json());
+    const b = document.getElementById('server-badge');
+    b.textContent='● Server Ready'; b.classList.add('awake');
+    if(d.disp_domains) document.getElementById('c-disp').textContent = d.disp_domains.toLocaleString();
+    loadCredits(); loadHist();
+  }catch(e){ document.getElementById('server-badge').textContent='✕ Offline'; setTimeout(wakeServer,6000); }
 }
-
-async function loadCredits() {
-  try {
-    const d = await fetch(`${API_BASE}/credits`).then(r=>r.json());
-    document.getElementById('zb-credits').textContent = d.zerobounce;
-    document.getElementById('kb-credits').textContent = d.kickbox;
-  } catch(e){}
+async function loadCredits(){
+  try{
+    const d=await fetch(`${API_BASE}/credits`).then(r=>r.json());
+    document.getElementById('c-zb').textContent  = d.zerobounce ?? '?';
+    document.getElementById('c-kb').textContent  = d.kickbox    ?? '?';
+    document.getElementById('c-nb').textContent  = d.neverbounce?? '?';
+    if(d.disp_domains) document.getElementById('c-disp').textContent = (+d.disp_domains).toLocaleString();
+  }catch(e){}
 }
 
 // ── TABS ─────────────────────────────────────────────────────────────────────
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('tab-csv').style.display    = btn.dataset.tab==='csv' ? 'block':'none';
-    document.getElementById('tab-sheets').style.display = btn.dataset.tab==='sheets' ? 'block':'none';
-  });
+document.querySelectorAll('.tab-btn').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('tab-csv').style.display    = b.dataset.tab==='csv'?'block':'none';
+    document.getElementById('tab-sheets').style.display = b.dataset.tab==='sheets'?'block':'none';
+  };
 });
 
-// ── DRAG DROP ────────────────────────────────────────────────────────────────
-const dz = document.getElementById('drop-zone');
-const fi = document.getElementById('file-input');
-dz.addEventListener('click', ()=>fi.click());
-dz.addEventListener('dragover', e=>{e.preventDefault();dz.classList.add('hover');});
-dz.addEventListener('dragleave', ()=>dz.classList.remove('hover'));
-dz.addEventListener('drop', e=>{e.preventDefault();dz.classList.remove('hover');startVerify(e.dataTransfer.files[0]);});
-fi.addEventListener('change', ()=>startVerify(fi.files[0]));
+// ── DRAG-DROP ─────────────────────────────────────────────────────────────────
+const dz=document.getElementById('drop-zone'), fi=document.getElementById('file-input');
+dz.onclick=()=>fi.click();
+dz.ondragover=e=>{e.preventDefault();dz.classList.add('hover')};
+dz.ondragleave=()=>dz.classList.remove('hover');
+dz.ondrop=e=>{e.preventDefault();dz.classList.remove('hover');handleFile(e.dataTransfer.files[0])};
+fi.onchange=()=>handleFile(fi.files[0]);
 
 // ── SHEETS IMPORT ─────────────────────────────────────────────────────────────
-document.getElementById('sheet-import-btn').addEventListener('click', async () => {
-  let sid = document.getElementById('sheet-id').value.trim();
-  const gid = document.getElementById('sheet-gid').value.trim() || '0';
-  // Support full URL
-  const match = sid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
-  if (match) sid = match[1];
-  if (!sid) return;
-  try {
-    const res = await fetch(`${API_BASE}/sheet-import?sheet_id=${sid}&gid=${gid}`);
-    if (!res.ok) { const e = await res.json(); toast('❌ ' + e.error, false); return; }
-    const blob = await res.blob();
-    const file = new File([blob], `sheet_${sid.slice(0,8)}.csv`, {type:'text/csv'});
-    startVerify(file);
-  } catch(e) { toast('❌ Import failed: ' + e.message, false); }
-});
+document.getElementById('sh-btn').onclick=async()=>{
+  let sid=document.getElementById('sh-id').value.trim();
+  const gid=document.getElementById('sh-gid').value.trim()||'0';
+  const m=sid.match(/\/spreadsheets\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) sid=m[1];
+  if(!sid) return;
+  try{
+    const res=await fetch(`${API_BASE}/sheet-import?sheet_id=${sid}&gid=${gid}`);
+    if(!res.ok){const e=await res.json();toast('❌ '+(e.error||'Import failed'),false);return}
+    const blob=await res.blob();
+    handleFile(new File([blob],`sheet_${sid.slice(0,8)}.csv`,{type:'text/csv'}));
+  }catch(e){toast('❌ Import failed',false)}
+};
 
-// ── SPEED ────────────────────────────────────────────────────────────────────
-const slider = document.getElementById('speed-slider');
-const slabel = document.getElementById('speed-label');
-const speedLabels = {0.1:'⚡ Fast (0.1s)',0.5:'⚡ Balanced (0.5s)',1:'🛡 Careful (1s)',2:'🛡 Safe (2s)',3:'🛡 Ultra Safe (3s)'};
-slider.addEventListener('input', () => {
-  const v = parseFloat(slider.value);
-  slabel.textContent = speedLabels[v] || `${v}s delay`;
-});
+// ── SPEED ─────────────────────────────────────────────────────────────────────
+const slider=document.getElementById('speed-slider'), slbl=document.getElementById('speed-label');
+const smap={'0.1':'⚡ Fast · 0.1s','0.5':'⚡ Balanced · 0.5s','1':'🛡 Careful · 1s','2':'🛡 Safe · 2s','3':'🛡 Ultra Safe · 3s'};
+slider.oninput=()=>{const v=parseFloat(slider.value).toFixed(1);slbl.textContent=smap[v]||`${v}s delay`};
+
+// ── COLUMN PICKER ─────────────────────────────────────────────────────────────
+async function handleFile(file){
+  if(!file) return;
+  const fd=new FormData(); fd.append('file',file);
+  let cols,guess;
+  try{
+    const d=await fetch(`${API_BASE}/detect-columns`,{method:'POST',body:fd}).then(r=>r.json());
+    cols=d.columns||[]; guess=d.guess;
+  }catch(e){startVerify(file,null);return}
+
+  if(guess){ startVerify(file,guess); return; }
+
+  // Show column picker modal
+  const col=await pickColumn(cols,file.name);
+  if(col) startVerify(file,col);
+}
+
+function pickColumn(cols,fname){
+  return new Promise(res=>{
+    const wrap=document.createElement('div');
+    wrap.className='modal-back';
+    wrap.innerHTML=`<div class="glass modal-box">
+      <h3>Select Email Column</h3>
+      <p>No "Email" column auto-detected in <strong>${esc(fname)}</strong>. Pick one:</p>
+      <select class="modal-select" id="col-sel">${cols.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
+      <div class="modal-row">
+        <button class="btn btn-primary" id="col-ok">Use this column →</button>
+        <button class="btn btn-ghost" id="col-no">Cancel</button>
+      </div>
+    </div>`;
+    document.body.appendChild(wrap);
+    document.getElementById('col-ok').onclick=()=>{const v=document.getElementById('col-sel').value;wrap.remove();res(v)};
+    document.getElementById('col-no').onclick=()=>{wrap.remove();res(null)};
+  });
+}
 
 // ── START VERIFY ──────────────────────────────────────────────────────────────
-async function startVerify(file) {
-  if (!file) return;
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('delay', slider.value);
-  try {
-    const d = await fetch(`${API_BASE}/verify`, {method:'POST', body:fd}).then(r=>r.json());
-    if (d.error) { toast('❌ ' + d.error, false); return; }
-    if (d.dupes_removed > 0) toast(`🧹 ${d.dupes_removed} duplicate emails removed`);
-    createJobCard(d.job_id, file.name, d.total, d.dupes_removed);
-  } catch(e) { toast('❌ Server not responding', false); }
+async function startVerify(file,emailCol){
+  const fd=new FormData();
+  fd.append('file',file);
+  fd.append('delay',slider.value);
+  if(emailCol) fd.append('email_column',emailCol);
+  try{
+    const d=await fetch(`${API_BASE}/verify`,{method:'POST',body:fd}).then(r=>r.json());
+    if(d.error){toast('❌ '+d.error,false);return}
+    if(d.dupes_removed>0) toast(`🧹 ${d.dupes_removed} duplicate emails removed`);
+    createCard(d.job_id,file.name,d.total,d.dupes_removed);
+  }catch(e){toast('❌ Server not responding',false)}
 }
 
 // ── JOB CARD ─────────────────────────────────────────────────────────────────
-const CIRCUM = 339.3;
-const jobsDiv = document.getElementById('jobs');
+const jobsDiv=document.getElementById('jobs');
 
-function createJobCard(jobId, fileName, total, dupes) {
-  const card = document.createElement('div');
-  card.className = 'job-card glass';
-  card.id = `card-${jobId}`;
-  card.innerHTML = `
-    <div class="job-header">
-      <div class="job-title">
-        📄 ${escHtml(fileName)}
-        ${dupes > 0 ? `<span class="dupes-badge">🧹 ${dupes} dupes removed</span>` : ''}
-      </div>
-      <button class="job-close" title="Cancel & remove">✕</button>
+function createCard(jid,fname,total,dupes){
+  const card=document.createElement('div');
+  card.className='jcard glass'; card.id=`c-${jid}`;
+  card.innerHTML=`
+  <div class="jhead">
+    <div class="jtitle">📄 ${esc(fname)}${dupes>0?` <span class="dbadge">🧹 ${dupes} dupes removed</span>`:''}</div>
+    <button class="jclose">✕</button>
+  </div>
+  <div class="jbody">
+    <div class="rwrap">
+      <svg class="rsvg" viewBox="0 0 120 120">
+        <circle class="rtrack" cx="60" cy="60" r="54"/>
+        <circle class="rfill" cx="60" cy="60" r="54"/>
+        <text class="rpct" x="60" y="52" text-anchor="middle" dominant-baseline="middle">0%</text>
+        <text class="rrows" x="60" y="68" text-anchor="middle">0/${total}</text>
+      </svg>
+      <div class="rstatus"><span class="pulse"></span>Verifying…</div>
     </div>
-    <div class="job-body">
-      <div class="ring-wrap">
-        <svg class="ring-svg" viewBox="0 0 120 120">
-          <circle class="ring-track" cx="60" cy="60" r="54"/>
-          <circle class="ring-fill" cx="60" cy="60" r="54"/>
-          <text class="ring-pct" x="60" y="54" text-anchor="middle" dominant-baseline="middle">0%</text>
-          <text class="ring-rows" x="60" y="70" text-anchor="middle">0 / ${total}</text>
-        </svg>
-        <div class="ring-status"><span class="pulse"></span> Verifying…</div>
-      </div>
-      <div class="stats-panel">
-        <div class="stat-row stat-valid">
-          <span class="stat-label sv">✅ Valid</span>
-          <div><span class="stat-num sv">0</span> <span class="stat-pct">0%</span></div>
-        </div>
-        <div class="stat-row stat-risky">
-          <span class="stat-label sr">⚠️ Risky</span>
-          <div><span class="stat-num sr">0</span> <span class="stat-pct">0%</span></div>
-        </div>
-        <div class="stat-row stat-invalid">
-          <span class="stat-label si">❌ Invalid</span>
-          <div><span class="stat-num si">0</span> <span class="stat-pct">0%</span></div>
-        </div>
-        <div class="meta-row" id="meta-${jobId}"></div>
-      </div>
+    <div class="spanel">
+      <div class="srow sv-row"><span class="slabel sv">✅ Valid</span><div><span class="snum sv" id="sv-${jid}">0</span> <span class="spct" id="svp-${jid}"></span></div></div>
+      <div class="srow sr-row"><span class="slabel sr">⚠️ Risky</span><div><span class="snum sr" id="sr-${jid}">0</span> <span class="spct" id="srp-${jid}"></span></div></div>
+      <div class="srow si-row"><span class="slabel si">❌ Invalid</span><div><span class="snum si" id="si-${jid}">0</span> <span class="spct" id="sip-${jid}"></span></div></div>
+      <div class="metarow" id="meta-${jid}"></div>
     </div>
-
-    <div class="layers-section">
-      <div class="section-label">Verification Layer</div>
-      <div class="layer-bars">
-        <div class="layer-chip lc-smtp"><span class="lc-count" id="l-smtp-${jobId}">0</span><span class="lc-label">SMTP</span></div>
-        <div class="layer-chip lc-zb">  <span class="lc-count" id="l-zb-${jobId}">0</span><span class="lc-label">ZeroBounce</span></div>
-        <div class="layer-chip lc-kb">  <span class="lc-count" id="l-kb-${jobId}">0</span><span class="lc-label">Kickbox</span></div>
-      </div>
-      <div class="section-label" style="margin-top:12px">Spam Trap Risk</div>
-      <div class="trap-row">
-        <div class="trap-chip tc-high">  <span class="tc-count" id="t-h-${jobId}">0</span>🔴 High</div>
-        <div class="trap-chip tc-medium"><span class="tc-count" id="t-m-${jobId}">0</span>🟡 Medium</div>
-        <div class="trap-chip tc-low">   <span class="tc-count" id="t-l-${jobId}">0</span>🟢 Low</div>
-      </div>
+  </div>
+  <div class="lsec">
+    <div class="slabel2">Verification Layer</div>
+    <div class="lbars">
+      <div class="lchip l0"><span class="lcn" id="ls-${jid}">0</span><span class="lcl">SMTP</span></div>
+      <div class="lchip l1"><span class="lcn" id="lz-${jid}">0</span><span class="lcl">ZeroBounce</span></div>
+      <div class="lchip l2"><span class="lcn" id="lk-${jid}">0</span><span class="lcl">Kickbox</span></div>
+      <div class="lchip l3"><span class="lcn" id="ln-${jid}">0</span><span class="lcl">NeverBounce</span></div>
+      <div class="lchip l4"><span class="lcn" id="la-${jid}">0</span><span class="lcl">Abstract</span></div>
     </div>
-
-    <div class="log-section">
-      <div class="section-label">Live Log</div>
-      <div class="log-feed" id="log-${jobId}"></div>
+    <div class="slabel2" style="margin-top:10px">Spam Trap Risk</div>
+    <div class="trow">
+      <div class="tchip tH"><span class="tcn" id="th-${jid}">0</span>🔴 High</div>
+      <div class="tchip tM"><span class="tcn" id="tm-${jid}">0</span>🟡 Medium</div>
+      <div class="tchip tL"><span class="tcn" id="tl-${jid}">0</span>🟢 Low</div>
     </div>
-
-    <div class="domain-section">
-      <button class="collapse-btn" id="dom-btn-${jobId}">
-        Domain Breakdown <span class="arrow">▾</span>
-      </button>
-      <div class="domain-table" id="dom-tbl-${jobId}"></div>
-    </div>
-
-    <div class="actions-section" id="actions-${jobId}">
-      <button class="cancel-btn-sm" id="cancel-${jobId}">Cancel</button>
-    </div>
-  `;
-
+  </div>
+  <div class="logsec">
+    <div class="slabel2">Live Log</div>
+    <div class="logfeed" id="lf-${jid}"></div>
+  </div>
+  <div class="domsec">
+    <button class="cbtn" id="db-${jid}">Domain Breakdown <span class="carrow">▾</span></button>
+    <div class="dtbl-wrap" id="dt-${jid}"></div>
+  </div>
+  <div class="actsec" id="act-${jid}">
+    <button class="abtn cancelbtn" id="can-${jid}">Cancel</button>
+  </div>`;
   jobsDiv.prepend(card);
 
-  // Close / cancel
-  card.querySelector('.job-close').onclick = () => {
-    fetch(`${API_BASE}/cancel?job_id=${jobId}`, {method:'POST'});
-    card.remove();
-  };
-  document.getElementById(`cancel-${jobId}`).onclick = () => {
-    fetch(`${API_BASE}/cancel?job_id=${jobId}`, {method:'POST'});
-    document.getElementById(`cancel-${jobId}`).remove();
-  };
+  card.querySelector('.jclose').onclick=()=>{fetch(`${API_BASE}/cancel?job_id=${jid}`,{method:'POST'});card.remove()};
+  document.getElementById(`can-${jid}`).onclick=()=>{fetch(`${API_BASE}/cancel?job_id=${jid}`,{method:'POST'});document.getElementById(`can-${jid}`).remove()};
+  document.getElementById(`db-${jid}`).onclick=function(){this.classList.toggle('open');document.getElementById(`dt-${jid}`).classList.toggle('open')};
 
-  // Domain breakdown toggle
-  document.getElementById(`dom-btn-${jobId}`).onclick = function() {
-    this.classList.toggle('open');
-    document.getElementById(`dom-tbl-${jobId}`).classList.toggle('open');
-  };
-
-  // Previous log lines (dedupe animation)
-  let prevLog = '';
-  let isDone  = false;
-
-  const poll = setInterval(async () => {
-    if (isDone) { clearInterval(poll); return; }
-    try {
-      const [prog, logText] = await Promise.all([
-        fetch(`${API_BASE}/progress?job_id=${jobId}`).then(r=>r.json()),
-        fetch(`${API_BASE}/log?job_id=${jobId}`).then(r=>r.text()),
+  let prevLog='', done=false;
+  const poll=setInterval(async()=>{
+    if(done){clearInterval(poll);return}
+    try{
+      const [p,lt]=await Promise.all([
+        fetch(`${API_BASE}/progress?job_id=${jid}`).then(r=>r.json()),
+        fetch(`${API_BASE}/log?job_id=${jid}`).then(r=>r.text()),
       ]);
-      updateCard(jobId, prog, logText, prevLog, total);
-      prevLog = logText;
-      if (prog.done) {
-        isDone = true;
-        clearInterval(poll);
-        finishCard(jobId, prog);
-        loadHistory();
-      }
-    } catch(e){}
-  }, 900);
+      updateCard(jid,p,lt,prevLog,total);
+      prevLog=lt;
+      if(p.done){done=true;clearInterval(poll);finishCard(jid,p);loadHist()}
+    }catch(e){}
+  },900);
 }
 
-function updateCard(jobId, p, logText, prevLog, total) {
-  const card = document.getElementById(`card-${jobId}`);
-  if (!card) return;
-  const pct  = p.percent || 0;
-  const tv   = p.total   || total;
-
-  // Ring
-  const ring = card.querySelector('.ring-fill');
-  const pctT = card.querySelector('.ring-pct');
-  const rowT = card.querySelector('.ring-rows');
-  ring.style.strokeDashoffset = CIRCUM * (1 - pct/100);
-  pctT.textContent = pct + '%';
-  rowT.textContent = `${p.row} / ${tv}`;
-
-  // Stats
-  const rows = card.querySelectorAll('.stat-num');
-  const pcts = card.querySelectorAll('.stat-pct');
-  if (tv > 0) {
-    rows[0].textContent = p.valid;   pcts[0].textContent = pct100(p.valid, tv);
-    rows[1].textContent = p.risky;   pcts[1].textContent = pct100(p.risky, tv);
-    rows[2].textContent = p.invalid; pcts[2].textContent = pct100(p.invalid, tv);
-  }
-
-  // Layers
-  document.getElementById(`l-smtp-${jobId}`).textContent = p.layer_smtp || 0;
-  document.getElementById(`l-zb-${jobId}`).textContent   = p.layer_zb   || 0;
-  document.getElementById(`l-kb-${jobId}`).textContent   = p.layer_kb   || 0;
-
-  // Traps
-  document.getElementById(`t-h-${jobId}`).textContent = p.trap_high   || 0;
-  document.getElementById(`t-m-${jobId}`).textContent = p.trap_medium || 0;
-  document.getElementById(`t-l-${jobId}`).textContent = p.trap_low    || 0;
-
-  // Log (only new lines)
-  if (logText && logText !== prevLog) {
-    const lines = logText.split('\n').filter(Boolean);
-    const feed  = document.getElementById(`log-${jobId}`);
-    const prevLines = prevLog.split('\n').filter(Boolean);
-    const newLines  = lines.filter(l => !prevLines.includes(l));
-    newLines.forEach(line => {
-      const el  = document.createElement('div');
-      const cls = line.startsWith('✅') ? 'le-valid' : line.startsWith('⚠️') ? 'le-risky' : 'le-invalid';
-      el.className = `log-entry ${cls}`;
-      el.textContent = line;
-      feed.appendChild(el);
-      while (feed.children.length > 8) feed.removeChild(feed.firstChild);
+function updateCard(jid,p,lt,prevLog,total){
+  const card=document.getElementById(`c-${jid}`); if(!card) return;
+  const tv=p.total||total, pct=p.percent||0;
+  card.querySelector('.rfill').style.strokeDashoffset = CIRC*(1-pct/100);
+  card.querySelector('.rpct').textContent = pct+'%';
+  card.querySelector('.rrows').textContent = `${p.row}/${tv}`;
+  const set=(id,v)=>{const el=document.getElementById(id);if(el)el.textContent=v};
+  set(`sv-${jid}`,p.valid); set(`svp-${jid}`,pct2(p.valid,tv));
+  set(`sr-${jid}`,p.risky); set(`srp-${jid}`,pct2(p.risky,tv));
+  set(`si-${jid}`,p.invalid);set(`sip-${jid}`,pct2(p.invalid,tv));
+  set(`ls-${jid}`,p.layer_smtp); set(`lz-${jid}`,p.layer_zb);
+  set(`lk-${jid}`,p.layer_kb);  set(`ln-${jid}`,p.layer_nb||0);
+  set(`la-${jid}`,p.layer_ab||0);
+  set(`th-${jid}`,p.trap_high); set(`tm-${jid}`,p.trap_medium); set(`tl-${jid}`,p.trap_low);
+  // Log
+  if(lt&&lt!==prevLog){
+    const lines=lt.split('\n').filter(Boolean);
+    const prev=(prevLog||'').split('\n').filter(Boolean);
+    const feed=document.getElementById(`lf-${jid}`);
+    lines.filter(l=>!prev.includes(l)).forEach(line=>{
+      const el=document.createElement('div');
+      el.className='le '+(line.startsWith('✅')?'lv':line.startsWith('⚠️')?'lr':'li');
+      el.textContent=line; feed.appendChild(el);
+      while(feed.children.length>8) feed.removeChild(feed.firstChild);
     });
   }
-
   // Domain breakdown
-  if (p.domain_stats && Object.keys(p.domain_stats).length) {
-    const tbl = document.getElementById(`dom-tbl-${jobId}`);
-    const sorted = Object.entries(p.domain_stats).sort((a,b)=>(b[1].valid+b[1].risky+b[1].invalid)-(a[1].valid+a[1].risky+a[1].invalid));
-    tbl.innerHTML = `<table class="dtable">
-      <tr><th>Domain</th><th class="dt-valid">✅</th><th class="dt-risky">⚠️</th><th class="dt-invalid">❌</th></tr>
-      ${sorted.slice(0,15).map(([dom,v])=>`<tr><td>${escHtml(dom)}</td><td class="dt-valid">${v.valid}</td><td class="dt-risky">${v.risky}</td><td class="dt-invalid">${v.invalid}</td></tr>`).join('')}
+  if(p.domain_stats&&Object.keys(p.domain_stats).length){
+    const tbl=document.getElementById(`dt-${jid}`);
+    const sorted=Object.entries(p.domain_stats).sort((a,b)=>(b[1].valid+b[1].risky+b[1].invalid)-(a[1].valid+a[1].risky+a[1].invalid));
+    tbl.innerHTML=`<table class="dtbl"><tr><th>Domain</th><th class="dv">✅</th><th class="dr">⚠️</th><th class="di">❌</th></tr>
+    ${sorted.slice(0,15).map(([d,v])=>`<tr><td>${esc(d)}</td><td class="dv">${v.valid}</td><td class="dr">${v.risky}</td><td class="di">${v.invalid}</td></tr>`).join('')}
     </table>`;
   }
 }
 
-function finishCard(jobId, p) {
-  const card = document.getElementById(`card-${jobId}`);
-  if (!card) return;
-
-  card.querySelector('.ring-status').innerHTML = '✅ Done';
-  card.querySelector('.pulse').remove();
-
-  // Health & bounce badges
-  const meta = document.getElementById(`meta-${jobId}`);
-  if (p.health_grade) {
-    meta.innerHTML = `
-      <span class="meta-badge badge-health-${p.health_grade}">Health: ${p.health_grade} (${p.health_score}%)</span>
-      <span class="meta-badge badge-bounce">Bounce est. ~${p.predicted_bounce}%</span>
-      ${p.trap_high > 0 ? `<span class="meta-badge badge-blacklist">🚩 ${p.trap_high} Spam Traps</span>` : ''}
-    `;
-  }
-
-  // Download buttons
-  const base = `${API_BASE}/download?job_id=${jobId}`;
-  document.getElementById(`actions-${jobId}`).innerHTML = `
-    <div class="dl-grid">
-      <a class="dl-btn dl-all"  href="${base}&type=all&fmt=csv"            target="_blank">⬇ All CSV</a>
-      <a class="dl-btn dl-v"    href="${base}&type=valid&fmt=csv"          target="_blank">✅ Valid CSV</a>
-      <a class="dl-btn dl-r"    href="${base}&type=risky&fmt=csv"          target="_blank">⚠️ Risky CSV</a>
-      <a class="dl-btn dl-i"    href="${base}&type=risky_invalid&fmt=csv"  target="_blank">❌ Invalid CSV</a>
-      <a class="dl-btn dl-json" href="${base}&type=valid&fmt=json"         target="_blank">{ } JSON</a>
-      <a class="dl-btn dl-txt"  href="${base}&type=valid&fmt=txt"          target="_blank">📋 TXT</a>
-    </div>
-    <button class="copy-btn" id="copy-${jobId}">📋 Copy Valid Emails to Clipboard</button>
+function finishCard(jid,p){
+  const card=document.getElementById(`c-${jid}`); if(!card) return;
+  const rs=card.querySelector('.rstatus'); rs.innerHTML='✅ Complete';
+  const pu=card.querySelector('.pulse'); if(pu) pu.remove();
+  // Badges
+  const meta=document.getElementById(`meta-${jid}`);
+  const gc=p.health_grade;
+  meta.innerHTML=`
+    ${gc?`<span class="mbadge m${gc}">Health ${gc} · ${p.health_score}%</span>`:''}
+    <span class="mbadge mB2">~${p.predicted_bounce}% bounce</span>
+    ${(p.trap_high||0)>0?`<span class="mbadge mBL">🚩 ${p.trap_high} Spam Traps</span>`:''}
   `;
-
-  document.getElementById(`copy-${jobId}`).onclick = async () => {
-    try {
-      const emails = await fetch(`${API_BASE}/emails?job_id=${jobId}&status=valid`).then(r=>r.json());
+  // Actions
+  const base=`${API_BASE}/download?job_id=${jid}`;
+  const act=document.getElementById(`act-${jid}`);
+  act.innerHTML=`
+    <div class="dlgrid">
+      <a class="dlbtn dAll" href="${base}&type=all&fmt=csv"           target="_blank">⬇ All CSV</a>
+      <a class="dlbtn dV"   href="${base}&type=valid&fmt=csv"         target="_blank">✅ Valid CSV</a>
+      <a class="dlbtn dR"   href="${base}&type=risky&fmt=csv"         target="_blank">⚠️ Risky CSV</a>
+      <a class="dlbtn dI"   href="${base}&type=risky_invalid&fmt=csv" target="_blank">❌ Invalid CSV</a>
+      <a class="dlbtn dJ"   href="${base}&type=valid&fmt=json"        target="_blank">{ } JSON</a>
+      <a class="dlbtn dT"   href="${base}&type=valid&fmt=txt"         target="_blank">📋 TXT</a>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="abtn copybtn" id="cp-${jid}">📋 Copy Valid Emails</button>
+      <button class="abtn rebtn"   id="rv-${jid}">🔄 Re-verify Risky (${p.risky||0})</button>
+    </div>
+    <div class="sheetback" id="sb-${jid}">
+      <h4>📊 Write Results to Google Sheets</h4>
+      <div class="shrow">
+        <input class="ifield" id="sh2-id-${jid}" placeholder="Sheet ID">
+        <input class="ifield" id="sh2-tab-${jid}" placeholder="Tab name (Sheet1)" style="max-width:140px">
+        <button class="btn btn-primary" id="sh2-btn-${jid}" style="font-size:12px">Write →</button>
+      </div>
+      <div class="shstatus" id="sh2-st-${jid}">Writes Verified_Status + Verify_Reason columns</div>
+    </div>
+  `;
+  // Copy
+  document.getElementById(`cp-${jid}`).onclick=async()=>{
+    try{
+      const emails=await fetch(`${API_BASE}/emails?job_id=${jid}&status=valid`).then(r=>r.json());
       await navigator.clipboard.writeText(emails.join('\n'));
-      const btn = document.getElementById(`copy-${jobId}`);
-      btn.textContent = `✅ Copied ${emails.length} emails!`;
-      btn.classList.add('copied');
-      setTimeout(()=>{ btn.textContent='📋 Copy Valid Emails to Clipboard'; btn.classList.remove('copied'); }, 3000);
-    } catch(e) { toast('❌ Clipboard access denied', false); }
+      const btn=document.getElementById(`cp-${jid}`);
+      btn.textContent=`✅ Copied ${emails.length} emails!`; btn.classList.add('done');
+      setTimeout(()=>{btn.textContent='📋 Copy Valid Emails';btn.classList.remove('done')},3000);
+    }catch(e){toast('❌ Clipboard denied',false)}
   };
-
+  // Re-verify risky
+  document.getElementById(`rv-${jid}`).onclick=async()=>{
+    try{
+      const res=await fetch(`${base.replace('/download','')}/download?job_id=${jid}&type=risky&fmt=csv`);
+      if(!res.ok){toast('❌ No risky emails',false);return}
+      const blob=await res.blob();
+      const file=new File([blob],`reverify-risky-${jid.slice(0,6)}.csv`,{type:'text/csv'});
+      toast('🔄 Starting re-verify for risky emails…');
+      startVerify(file,null);
+    }catch(e){toast('❌ Failed',false)}
+  };
+  // Sheets write-back
+  document.getElementById(`sh2-btn-${jid}`).onclick=async()=>{
+    const sid=document.getElementById(`sh2-id-${jid}`).value.trim();
+    const tab=document.getElementById(`sh2-tab-${jid}`).value.trim()||'Sheet1';
+    const st=document.getElementById(`sh2-st-${jid}`);
+    if(!sid){st.textContent='⚠️ Enter Sheet ID first';return}
+    st.textContent='Writing…';
+    try{
+      const d=await fetch(`${API_BASE}/sheets-write`,{method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({job_id:jid,sheet_id:sid,tab_name:tab})
+      }).then(r=>r.json());
+      if(d.success) st.style.color='var(--green)',st.textContent=`✅ ${d.rows_written} rows written to ${tab}`;
+      else st.style.color='var(--red)',st.textContent='❌ '+d.error;
+    }catch(e){st.style.color='var(--red)',st.textContent='❌ Failed: '+e.message}
+  };
   launchConfetti();
 }
 
 // ── HISTORY ───────────────────────────────────────────────────────────────────
-async function loadHistory() {
-  const div = document.getElementById('history');
-  try {
-    const jobs = await fetch(`${API_BASE}/jobs`).then(r=>r.json());
-    if (!jobs.length) { div.innerHTML='<p class="hist-empty">No past jobs.</p>'; return; }
-    div.innerHTML = jobs.map(j => `
-      <div class="hist-row">
+async function loadHist(){
+  const div=document.getElementById('hist');
+  try{
+    const jobs=await fetch(`${API_BASE}/jobs`).then(r=>r.json());
+    if(!jobs.length){div.innerHTML='<p class="hempty">No past jobs.</p>';return}
+    div.innerHTML=jobs.map(j=>`
+      <div class="hrow">
         <div>
-          <div class="hist-name">📄 ${escHtml(j.filename)}</div>
-          <div class="hist-meta">
-            ${j.created_at.slice(0,16).replace('T',' ')} &nbsp;·&nbsp; ${j.total} rows &nbsp;·&nbsp;
-            <span style="color:var(--green)">✅${j.cnt_valid}</span>&nbsp;
-            <span style="color:var(--yellow)">⚠️${j.cnt_risky}</span>&nbsp;
+          <div class="hname">📄 ${esc(j.filename)}</div>
+          <div class="hmeta">${j.created_at.slice(0,16).replace('T',' ')} · ${j.total} rows ·
+            <span style="color:var(--green)">✅${j.cnt_valid}</span>
+            <span style="color:var(--yellow)">⚠️${j.cnt_risky}</span>
             <span style="color:var(--red)">❌${j.cnt_invalid}</span>
           </div>
         </div>
-        <div class="hist-right">
-          ${j.health_grade ? `<span class="meta-badge badge-health-${j.health_grade}" style="font-size:10px">${j.health_grade}</span>` : ''}
-          <span class="hbadge ${j.done?'hb-done':'hb-running'}">${j.done ? 'Done ✓' : j.progress+'%'}</span>
+        <div class="hright">
+          ${j.health_grade?`<span class="mbadge m${j.health_grade}" style="font-size:10px">${j.health_grade}</span>`:''}
+          <span class="hbadge ${j.done?'hdone':'hrun'}">${j.done?'Done ✓':j.progress+'%'}</span>
         </div>
-      </div>
-    `).join('');
-  } catch(e) { div.innerHTML='<p class="hist-empty">Server offline.</p>'; }
+      </div>`).join('');
+  }catch(e){div.innerHTML='<p class="hempty">Server offline.</p>'}
 }
 
 // ── CONFETTI ──────────────────────────────────────────────────────────────────
-function launchConfetti() {
-  const canvas = document.createElement('canvas');
-  Object.assign(canvas.style, {position:'fixed',top:'0',left:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'9999'});
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext('2d');
-  canvas.width  = window.innerWidth;
-  canvas.height = window.innerHeight;
-  const colors = ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444'];
-  const parts   = Array.from({length:90}, ()=>({
-    x: Math.random()*canvas.width, y: -10,
-    vx:(Math.random()-.5)*5, vy:Math.random()*4+2,
+function launchConfetti(){
+  const cv=document.createElement('canvas');
+  Object.assign(cv.style,{position:'fixed',top:'0',left:'0',width:'100%',height:'100%',pointerEvents:'none',zIndex:'9999'});
+  document.body.appendChild(cv);
+  const ctx=cv.getContext('2d');
+  cv.width=window.innerWidth; cv.height=window.innerHeight;
+  const colors=['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444','#ec4899'];
+  const ps=Array.from({length:100},()=>({
+    x:Math.random()*cv.width,y:-10,
+    vx:(Math.random()-.5)*6,vy:Math.random()*5+2,
     color:colors[Math.floor(Math.random()*colors.length)],
-    size:Math.random()*8+3, rot:Math.random()*360,
-    rs:(Math.random()-.5)*12,
+    size:Math.random()*9+3,rot:Math.random()*360,rs:(Math.random()-.5)*14,
   }));
-  let frame;
-  function animate(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    parts.forEach(p=>{
-      p.x+=p.vx; p.y+=p.vy; p.rot+=p.rs;
-      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
-      ctx.fillStyle=p.color; ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);
-      ctx.restore();
+  let fr;
+  function anim(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.rot+=p.rs;
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle=p.color;ctx.fillRect(-p.size/2,-p.size/2,p.size,p.size);ctx.restore();
     });
-    if(parts.some(p=>p.y<canvas.height)) frame=requestAnimationFrame(animate);
-    else canvas.remove();
+    if(ps.some(p=>p.y<cv.height)) fr=requestAnimationFrame(anim); else cv.remove();
   }
-  animate();
-  setTimeout(()=>{ cancelAnimationFrame(frame); canvas.remove(); }, 4000);
-}
-
-// ── TOAST ─────────────────────────────────────────────────────────────────────
-function toast(msg, success=true) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.style.background = success ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)';
-  t.style.borderColor = success ? 'rgba(16,185,129,.3)' : 'rgba(239,68,68,.3)';
-  t.style.color       = success ? 'var(--green)' : 'var(--red)';
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 3000);
+  anim(); setTimeout(()=>{cancelAnimationFrame(fr);cv.remove()},4500);
 }
 
 // ── UTILS ─────────────────────────────────────────────────────────────────────
-function pct100(n, t) { return t>0 ? '('+Math.round(n/t*100)+'%)' : ''; }
-function escHtml(s)   { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function pct2(n,t){return t>0?`(${Math.round(n/t*100)}%)`:''}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function toast(msg,ok=true){
+  const t=document.getElementById('toast');
+  t.textContent=msg;
+  t.style.background=ok?'rgba(16,185,129,.15)':'rgba(239,68,68,.15)';
+  t.style.borderColor=ok?'rgba(16,185,129,.3)':'rgba(239,68,68,.3)';
+  t.style.color=ok?'var(--green)':'var(--red)';
+  t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3000);
+}
 
-// ── INIT ──────────────────────────────────────────────────────────────────────
 wakeServer();
 </script>
 </body>
