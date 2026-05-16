@@ -346,6 +346,18 @@ def get_google_sa():
             with open(path) as f: return json.load(f)
     return None
 
+# ── KNOWN PROVIDERS (skip SMTP — they block it anyway) ───────────────────────
+SMTP_SKIP_DOMAINS = {
+    "gmail.com","googlemail.com","yahoo.com","yahoo.co.uk","yahoo.co.in",
+    "yahoo.fr","yahoo.de","yahoo.es","yahoo.it","yahoo.ca","yahoo.com.br",
+    "hotmail.com","hotmail.co.uk","hotmail.fr","hotmail.de","hotmail.es",
+    "hotmail.it","hotmail.com.br","outlook.com","outlook.co.uk","outlook.fr",
+    "live.com","live.co.uk","live.fr","msn.com","icloud.com","me.com",
+    "mac.com","aol.com","protonmail.com","protonmail.ch","pm.me",
+    "zoho.com","zohomail.com","mail.com","gmx.com","gmx.net","gmx.de",
+    "yandex.com","yandex.ru","rambler.ru","qq.com","163.com","126.com",
+}
+
 # ── MAIN CHECK (5 layers) ─────────────────────────────────────────────────────
 def check_email(email,delay=0.5):
     res = {"status":"invalid","reason":"","typo":None,"layer":"syntax","trap":"low","blacklisted":False}
@@ -363,6 +375,16 @@ def check_email(email,delay=0.5):
 
     if local in ROLE_PREFIXES:
         res.update({"reason":"role_based","layer":"filter","trap":"high","status":"invalid"}); return res
+
+    # Skip SMTP for known providers — they block port 25/587 from cloud IPs
+    if domain in SMTP_SKIP_DOMAINS:
+        for fn,lbl in [(zerobounce_check,"zerobounce"),(kickbox_check,"kickbox"),
+                       (neverbounce_check,"neverbounce"),(abstract_check,"abstract")]:
+            s,r = fn(email)
+            if s:
+                res.update({"status":s,"reason":r,"layer":lbl,"trap":trap_risk(email,s,r)}); return res
+        # APIs exhausted — mark risky (mailbox existence unconfirmed but domain valid)
+        res.update({"status":"risky","reason":"provider_no_smtp","layer":"api_fallback","trap":"low"}); return res
 
     dinfo = domain_info(domain)
     res["blacklisted"] = dinfo["blacklisted"]
