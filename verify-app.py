@@ -374,7 +374,7 @@ def check_email(email,delay=0.5):
         res.update({"reason":"disposable_domain","layer":"filter","trap":"high","status":"invalid"}); return res
 
     if local in ROLE_PREFIXES:
-        res.update({"reason":"role_based","layer":"filter","trap":"high","status":"invalid"}); return res
+        res.update({"reason":"role_based","layer":"filter","trap":"medium","status":"risky"}); return res
 
     # Skip SMTP for known providers — they block port 25/587 from cloud IPs
     if domain in SMTP_SKIP_DOMAINS:
